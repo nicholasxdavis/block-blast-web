@@ -159,18 +159,19 @@
             return;
           }
 
-          if (!Module.ENV) Module.ENV = {};
+          // Collect redeem flags that will be passed as command-line args to Love
+          if (!Module.redeemArgs) Module.redeemArgs = [];
           var ok = false;
           if (code === '645873FS68S7A') {
-            Module.ENV.BB_UNLIMITED = '1';
+            Module.redeemArgs.push('--ul');
             msg.textContent = 'Unlimited Lives unlocked!';
             ok = true;
           } else if (code === '839204KD57P1X') {
-            Module.ENV.BB_HINTS = '1';
+            Module.redeemArgs.push('--uh');
             msg.textContent = 'Unlimited Hints unlocked!';
             ok = true;
           } else if (code === '560738RT29C4B') {
-            Module.ENV.BB_UNLOCK_ALL = '1';
+            Module.redeemArgs.push('--ua');
             msg.textContent = 'Unlock Everything activated!';
             ok = true;
           } else {
@@ -225,6 +226,10 @@
 
       var applicationLoad = function(e) {
         handleRedeemIfNeeded(function() {
+          // Apply any redeem flags as extra Love arguments
+          if (Array.isArray(Module.redeemArgs) && Module.redeemArgs.length) {
+            Module.arguments = ["./game.love"].concat(Module.redeemArgs);
+          }
           Love(Module);
         });
       }
