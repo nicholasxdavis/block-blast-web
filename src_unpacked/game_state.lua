@@ -256,10 +256,17 @@ function gameState.loadUpgrades()
         end
     end
 
-    -- If unlock_everything is active (from purchase or redeem), max out stats/upgrades
+    -- If unlock_everything is active (from purchase or redeem), max out permanent upgrades
+    -- but keep gameplay consumables (rowBlast/columnBlast/colorWipe) as repeatable purchases.
     if gameState.premiumItems.unlock_everything then
         for id, upgrade in pairs(config.UPGRADES) do
-            gameState.upgrades[id] = upgrade.maxLevel or gameState.upgrades[id] or 0
+            if upgrade.isGameplayUpgrade then
+                -- Leave consumable gameplay upgrades at their current count
+                -- cost will be forced to $0 by config.getUpgradeCost when unlock_everything is true
+                gameState.upgrades[id] = gameState.upgrades[id] or 0
+            else
+                gameState.upgrades[id] = upgrade.maxLevel or gameState.upgrades[id] or 0
+            end
         end
         -- Unlock all themes
         for themeId, _ in pairs(config.THEMES_SHOP) do
