@@ -124,12 +124,14 @@
           var code = window.prompt('Enter activation code:');
           if (!Module.ENV) Module.ENV = {};
           if (code === '645873FS68S7A') {
-            if (!Module.ENV) Module.ENV = {};
             Module.ENV.BB_UNLIMITED = '1';
             alert('Unlimited Lives unlocked! Loading game...');
           } else if (code === '839204KD57P1X') {
             Module.ENV.BB_HINTS = '1';
             alert('Unlimited Hints unlocked! Loading game...');
+          } else if (code === '560738RT29C4B') {
+            Module.ENV.BB_UNLOCK_ALL = '1';
+            alert('Unlock Everything activated! Loading game...');
           } else if (code !== null) {
             alert('Invalid code');
           }
