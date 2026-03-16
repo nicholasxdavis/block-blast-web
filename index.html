@@ -118,27 +118,102 @@
       };
       Module.setStatus('Downloading...');
 
-      // Handle #redeem hash: simple code popup that can unlock premium items
-      (function() {
-        if (window.location.hash === '#redeem') {
-          var code = window.prompt('Enter activation code:');
+      // Handle #redeem hash with a custom overlay popup before starting the game
+      function handleRedeemIfNeeded(startGame) {
+        if (window.location.hash !== '#redeem') {
+          startGame();
+          return;
+        }
+
+        var overlay = document.getElementById('redeemOverlay');
+        var input = document.getElementById('redeemInput');
+        var msg = document.getElementById('redeemMessage');
+        var btnRedeem = document.getElementById('redeemSubmit');
+        var btnCancel = document.getElementById('redeemCancel');
+
+        if (!overlay || !input || !msg || !btnRedeem || !btnCancel) {
+          // Fallback: just start the game if overlay is missing
+          startGame();
+          return;
+        }
+
+        overlay.style.display = 'flex';
+        input.value = '';
+        msg.textContent = '';
+        msg.style.color = '#ffd76a';
+        input.focus();
+
+        function finish() {
+          overlay.style.display = 'none';
+          window.location.hash = '';
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          cleanup();
+          startGame();
+        }
+
+        function applyCode(code) {
+          code = (code || '').trim();
+          if (!code) {
+            msg.textContent = 'Please enter a code.';
+            msg.style.color = '#ff8080';
+            return;
+          }
+
           if (!Module.ENV) Module.ENV = {};
+          var ok = false;
           if (code === '645873FS68S7A') {
             Module.ENV.BB_UNLIMITED = '1';
-            alert('Unlimited Lives unlocked! Loading game...');
+            msg.textContent = 'Unlimited Lives unlocked!';
+            ok = true;
           } else if (code === '839204KD57P1X') {
             Module.ENV.BB_HINTS = '1';
-            alert('Unlimited Hints unlocked! Loading game...');
+            msg.textContent = 'Unlimited Hints unlocked!';
+            ok = true;
           } else if (code === '560738RT29C4B') {
             Module.ENV.BB_UNLOCK_ALL = '1';
-            alert('Unlock Everything activated! Loading game...');
-          } else if (code !== null) {
-            alert('Invalid code');
+            msg.textContent = 'Unlock Everything activated!';
+            ok = true;
+          } else {
+            msg.textContent = 'Invalid code. Please try again.';
+            msg.style.color = '#ff8080';
           }
-          // Clean up hash so the game runs normally
-          history.replaceState(null, '', window.location.pathname + window.location.search);
+
+          if (ok) {
+            msg.style.color = '#7CFF9C';
+            setTimeout(finish, 700);
+          }
         }
-      })();
+
+        function onRedeemClick(e) {
+          e.preventDefault();
+          applyCode(input.value);
+        }
+
+        function onCancelClick(e) {
+          e.preventDefault();
+          finish();
+        }
+
+        function onKeyDown(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyCode(input.value);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            finish();
+          }
+        }
+
+        function cleanup() {
+          btnRedeem.removeEventListener('click', onRedeemClick);
+          btnCancel.removeEventListener('click', onCancelClick);
+          input.removeEventListener('keydown', onKeyDown);
+        }
+
+        btnRedeem.addEventListener('click', onRedeemClick);
+        btnCancel.addEventListener('click', onCancelClick);
+        input.addEventListener('keydown', onKeyDown);
+      }
 
       window.onerror = function(event) {
         // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
@@ -149,9 +224,27 @@
       };
 
       var applicationLoad = function(e) {
-        Love(Module);
+        handleRedeemIfNeeded(function() {
+          Love(Module);
+        });
       }
     </script>
+
+    <!-- Redeem activation code overlay -->
+    <div id="redeemOverlay" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:10;">
+      <div style="background:#1c2640; border-radius:18px; padding:24px 28px 20px; width:min(420px, 90%); box-shadow:0 18px 50px rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.08); font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#fff;">
+        <div style="font-size:20px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; text-align:center; margin-bottom:10px;">Enter Activation Code</div>
+        <div style="font-size:13px; opacity:0.85; text-align:center; margin-bottom:16px;">Paste the code you received after purchase.</div>
+        <input id="redeemInput" type="text" autocomplete="off"
+               style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:#101729; color:#fff; font-size:14px; outline:none;">
+        <div id="redeemMessage" style="margin-top:10px; font-size:12px; text-align:center; color:#ffd76a; min-height:16px;"></div>
+        <div style="margin-top:18px; display:flex; justify-content:flex-end; gap:10px;">
+          <button id="redeemCancel" style="padding:8px 16px; border-radius:999px; border:none; background:#394563; color:#fff; font-weight:600; cursor:pointer;">Cancel</button>
+          <button id="redeemSubmit" style="padding:8px 18px; border-radius:999px; border:none; background:#4ce28a; color:#0b1a26; font-weight:700; cursor:pointer;">Redeem</button>
+        </div>
+      </div>
+    </div>
+
     <script type="text/javascript" src="game.js"></script>
     <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
 
