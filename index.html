@@ -117,6 +117,23 @@
         }
       };
       Module.setStatus('Downloading...');
+
+      // Handle #redeem hash: simple code popup that can unlock unlimited lives
+      (function() {
+        if (window.location.hash === '#redeem') {
+          var code = window.prompt('Enter activation code for Unlimited Lives:');
+          if (code === '645873FS68S7A') {
+            if (!Module.ENV) Module.ENV = {};
+            Module.ENV.BB_UNLIMITED = '1';
+            alert('Unlimited Lives unlocked! Loading game...');
+          } else if (code !== null) {
+            alert('Invalid code');
+          }
+          // Clean up hash so the game runs normally
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      })();
+
       window.onerror = function(event) {
         // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
         Module.setStatus('Exception thrown, see JavaScript console');
