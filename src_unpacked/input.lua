@@ -28,10 +28,10 @@ function input.handleMousePressed(mx, my, button, gameState, tray)
             gameState.pendingSave = false
             gameState.autoSaveTimer = 0
             
-            -- Delete all save files FIRST to ensure clean slate
+            -- Delete score/money/audio save files FIRST to ensure clean slate
+            -- (keep block_upgrades.txt so premium purchases / redeem perks persist)
             love.filesystem.remove("block_highscore.txt")
             love.filesystem.remove("block_money.txt")
-            love.filesystem.remove("block_upgrades.txt")
             love.filesystem.remove("block_audio.txt")
             
             -- Reset ALL persistent game state variables to defaults
@@ -63,10 +63,6 @@ function input.handleMousePressed(mx, my, button, gameState, tray)
             gameState.activeTheme = "classic"
             gameState.currentTheme = config.getThemeIndex("classic")
             
-            -- NOTE: Do NOT reset premium items here.
-            -- Redeemed / purchased perks (unlimited lives/hints/unlock everything)
-            -- are meant to be permanent and survive a full reset.
-
             -- Reset audio settings to defaults
             audio.enabled = true
             audio.musicEnabled = true
@@ -75,23 +71,6 @@ function input.handleMousePressed(mx, my, button, gameState, tray)
             -- Write files DIRECTLY with correct values (don't use save functions that might read current state)
             love.filesystem.write("block_highscore.txt", "0")
             love.filesystem.write("block_money.txt", "100")
-            love.filesystem.write("block_upgrades.txt", 
-                "moneyMagnet=0\n" ..
-                "scoreBoost=0\n" ..
-                "hintMaster=0\n" ..
-                "comboKing=0\n" ..
-                "luckyStart=0\n" ..
-                "rowBlast=0\n" ..
-                "columnBlast=0\n" ..
-                "colorWipe=0\n" ..
-                "theme_neon=false\n" ..
-                "theme_pastel=false\n" ..
-                "theme_ocean=false\n" ..
-                "activeTheme=classic\n" ..
-                "premium_unlimited_lives=" .. tostring(gameState.premiumItems.unlimited_lives) .. "\n" ..
-                "premium_unlimited_hints=" .. tostring(gameState.premiumItems.unlimited_hints) .. "\n" ..
-                "premium_unlock_everything=" .. tostring(gameState.premiumItems.unlock_everything)
-            )
             audio.saveSettings()
             
             -- Now use save functions to ensure consistency (they should write the same values we just set)
