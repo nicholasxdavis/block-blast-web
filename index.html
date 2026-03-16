@@ -131,5 +131,23 @@
     </script>
     <script type="text/javascript" src="game.js"></script>
     <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDH6twhbNsEfKSZR5l7hmcCjTxHo7jRomU",
+        authDomain: "blockburst-4ebfc.firebaseapp.com",
+        projectId: "blockburst-4ebfc",
+        storageBucket: "blockburst-4ebfc.firebasestorage.app",
+        messagingSenderId: "137547380518",
+        appId: "1:137547380518:web:13e71bc917f66c0c83b3e7",
+        measurementId: "G-DFELVS4EBJ"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+    </script>
   </body>
 </html>
