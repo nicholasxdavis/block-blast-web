@@ -63,13 +63,10 @@ function input.handleMousePressed(mx, my, button, gameState, tray)
             gameState.activeTheme = "classic"
             gameState.currentTheme = config.getThemeIndex("classic")
             
-            -- Reset premium items
-            gameState.premiumItems = {
-                unlimited_lives = false,
-                unlimited_hints = false,
-                unlock_everything = false
-            }
-            
+            -- NOTE: Do NOT reset premium items here.
+            -- Redeemed / purchased perks (unlimited lives/hints/unlock everything)
+            -- are meant to be permanent and survive a full reset.
+
             -- Reset audio settings to defaults
             audio.enabled = true
             audio.musicEnabled = true
@@ -91,9 +88,9 @@ function input.handleMousePressed(mx, my, button, gameState, tray)
                 "theme_pastel=false\n" ..
                 "theme_ocean=false\n" ..
                 "activeTheme=classic\n" ..
-                "premium_unlimited_lives=false\n" ..
-                "premium_unlimited_hints=false\n" ..
-                "premium_unlock_everything=false"
+                "premium_unlimited_lives=" .. tostring(gameState.premiumItems.unlimited_lives) .. "\n" ..
+                "premium_unlimited_hints=" .. tostring(gameState.premiumItems.unlimited_hints) .. "\n" ..
+                "premium_unlock_everything=" .. tostring(gameState.premiumItems.unlock_everything)
             )
             audio.saveSettings()
             
