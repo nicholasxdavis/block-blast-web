@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1">
+    <title>Block Blast</title>
+
+    <!-- Load custom style sheet -->
+    <link rel="stylesheet" type="text/css" href="theme/love.css">
+  </head>
+  <body>
+    <canvas id="loadingCanvas" oncontextmenu="event.preventDefault()"></canvas>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+    <script type='text/javascript'>
+      function goFullScreen(){
+            var canvas = document.getElementById("canvas");
+            if(canvas.requestFullScreen)
+                canvas.requestFullScreen();
+            else if(canvas.webkitRequestFullScreen)
+                canvas.webkitRequestFullScreen();
+            else if(canvas.mozRequestFullScreen)
+                canvas.mozRequestFullScreen();
+      }
+      function FullScreenHook(){
+        var canvas = document.getElementById("canvas");
+        var loadingCanvas = document.getElementById("loadingCanvas");
+        var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        var height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        canvas.width = width;
+        canvas.height = height;
+        loadingCanvas.width = width;
+        loadingCanvas.height = height;
+      }
+      
+      // Make fullscreen on resize
+      window.addEventListener('resize', function() {
+        FullScreenHook();
+        if (loadingContext) {
+          var loadingCanvas = document.getElementById('loadingCanvas');
+          loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+          loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        }
+      });
+      var loadingContext = null;
+      function initLoadingCanvas() {
+        var loadingCanvas = document.getElementById('loadingCanvas');
+        loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        loadingContext = loadingCanvas.getContext('2d');
+      }
+      function drawLoadingText(text) {
+        if (!loadingContext) initLoadingCanvas();
+        var canvas = loadingContext.canvas;
+
+        loadingContext.fillStyle = "#000";
+        loadingContext.fillRect(0, 0, canvas.width, canvas.height);
+
+        loadingContext.font = '2em arial';
+        loadingContext.textAlign = 'center'
+        loadingContext.fillStyle = "#fff";
+        loadingContext.fillText(text, canvas.width / 2, canvas.height / 2);
+      }
+      
+      // Initialize loading canvas on load
+      window.addEventListener('load', function() {
+        initLoadingCanvas();
+        FullScreenHook();
+      });
+
+      window.onload = function () { window.focus(); };
+      window.onclick = function () { window.focus(); };
+
+      window.addEventListener("keydown", function(e) {
+        // space and arrow keys
+        if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+          e.preventDefault();
+        }
+      }, false);
+
+      var Module = {
+        arguments: ["./game.love"],
+        INITIAL_MEMORY: 209715200,
+        locateFile: function(path) {
+          if (path.endsWith('.wasm')) {
+            return './love.wasm';
+          }
+          return path;
+        },
+        printErr: console.error.bind(console),
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        setStatus: function(text) {
+          if (text) {
+            drawLoadingText(text);
+          } else if (Module.remainingDependencies === 0) {
+            document.getElementById('loadingCanvas').style.display = 'none';
+            document.getElementById('canvas').style.visibility = 'visible';
+            FullScreenHook();
+          }
+        },
+        totalDependencies: 0,
+        remainingDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.remainingDependencies = left;
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+      };
+      Module.setStatus('Downloading...');
+      window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.setStatus('Exception thrown, see JavaScript console');
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      };
+
+      var applicationLoad = function(e) {
+        Love(Module);
+      }
+    </script>
+    <script type="text/javascript" src="game.js"></script>
+    <script async type="text/javascript" src="love.js" onload="applicationLoad(this)"></script>
+  </body>
+</html>
