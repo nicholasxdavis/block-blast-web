@@ -34,51 +34,58 @@ Module.expectedDataFileDownloads++;
     var PACKAGE_UUID = metadata.package_uuid;
 
     function fetchRemotePackage(packageName, packageSize, callback, errback) {
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', packageName, true);
-      xhr.responseType = 'arraybuffer';
-      xhr.onprogress = function(event) {
-        var url = packageName;
-        var size = packageSize;
-        if (event.total) size = event.total;
-        if (event.loaded) {
-          if (!xhr.addedTotal) {
-            xhr.addedTotal = true;
-            if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
-            Module.dataFileDownloads[url] = {
-              loaded: event.loaded,
-              total: size
-            };
-          } else {
-            Module.dataFileDownloads[url].loaded = event.loaded;
-          }
-          var total = 0;
-          var loaded = 0;
-          var num = 0;
-          for (var download in Module.dataFileDownloads) {
-            var data = Module.dataFileDownloads[download];
-            total += data.total;
-            loaded += data.loaded;
-            num++;
-          }
-          total = Math.ceil(total * Module.expectedDataFileDownloads/num);
-          if (Module['setStatus']) Module['setStatus']('Downloading data... (' + loaded + '/' + total + ')');
-        } else if (!Module.dataFileDownloads) {
-          if (Module['setStatus']) Module['setStatus']('Downloading data...');
+      // Custom loader: fetch split chunks game.data.part0 .. game.data.part7
+      var CHUNK_COUNT = 8;
+      var CHUNK_PREFIX = 'game.data.part';
+      var chunks = new Array(CHUNK_COUNT);
+      var loadedChunks = 0;
+
+      function checkDone() {
+        if (loadedChunks !== CHUNK_COUNT) return;
+        // Concatenate all chunk ArrayBuffers into one
+        var totalSize = 0;
+        for (var i = 0; i < CHUNK_COUNT; i++) {
+          totalSize += chunks[i].byteLength;
         }
-      };
-      xhr.onerror = function(event) {
-        throw new Error("NetworkError for: " + packageName);
+        var merged = new Uint8Array(totalSize);
+        var offset = 0;
+        for (var j = 0; j < CHUNK_COUNT; j++) {
+          merged.set(new Uint8Array(chunks[j]), offset);
+          offset += chunks[j].byteLength;
+        }
+        callback(merged.buffer);
       }
-      xhr.onload = function(event) {
-        if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
-          var packageData = xhr.response;
-          callback(packageData);
-        } else {
-          throw new Error(xhr.statusText + " : " + xhr.responseURL);
-        }
-      };
-      xhr.send(null);
+
+      for (var i = 0; i < CHUNK_COUNT; i++) {
+        (function(index) {
+          var url = CHUNK_PREFIX + index;
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onerror = function(event) {
+            if (errback) {
+              errback(new Error('NetworkError for: ' + url));
+            } else {
+              throw new Error('NetworkError for: ' + url);
+            }
+          };
+          xhr.onload = function(event) {
+            if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
+              chunks[index] = xhr.response;
+              loadedChunks++;
+              checkDone();
+            } else {
+              var error = new Error(xhr.statusText + ' : ' + xhr.responseURL);
+              if (errback) {
+                errback(error);
+              } else {
+                throw error;
+              }
+            }
+          };
+          xhr.send(null);
+        })(i);
+      }
     };
 
     function handleError(error) {
