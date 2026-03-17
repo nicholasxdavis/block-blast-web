@@ -224,12 +224,38 @@ Module.expectedDataFileDownloads++;
       };
     };
 
+    function clearCacheAndRetry(errback) {
+      // Clear corrupted cache and force fresh download
+      console.warn('Cache appears corrupted, clearing and retrying...');
+      openDatabase(
+        function(db) {
+          var clearTransaction = db.transaction([PACKAGE_STORE_NAME, METADATA_STORE_NAME], IDB_RW);
+          clearTransaction.oncomplete = function() {
+            console.info('Cache cleared, downloading fresh data...');
+            if (Module['setStatus']) Module['setStatus']('Updating...');
+            fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, errback);
+          };
+          var packagesStore = clearTransaction.objectStore(PACKAGE_STORE_NAME);
+          var metadataStore = clearTransaction.objectStore(METADATA_STORE_NAME);
+          packagesStore.delete("package/" + PACKAGE_PATH + PACKAGE_NAME);
+          metadataStore.delete("metadata/" + PACKAGE_PATH + PACKAGE_NAME);
+        },
+        function(error) {
+          console.error('Failed to clear cache:', error);
+          // Fallback: just try downloading fresh
+          if (Module['setStatus']) Module['setStatus']('Updating...');
+          fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, errback);
+        }
+      );
+    }
+
     function processPackageData(arrayBuffer) {
-      Module.finishedDataFileDownloads++;
-      assert(arrayBuffer, 'Loading data file failed.');
-      assert(arrayBuffer instanceof ArrayBuffer, 'bad input to processPackageData');
-      var byteArray = new Uint8Array(arrayBuffer);
-      var curr;
+      try {
+        Module.finishedDataFileDownloads++;
+        assert(arrayBuffer, 'Loading data file failed.');
+        assert(arrayBuffer instanceof ArrayBuffer, 'bad input to processPackageData');
+        var byteArray = new Uint8Array(arrayBuffer);
+        var curr;
 
         // copy the entire loaded file into a spot in the heap. Files will refer to slices in that. They cannot be freed though
         // (we may be allocating before malloc is ready, during startup).
@@ -243,8 +269,12 @@ Module.expectedDataFileDownloads++;
           DataRequest.prototype.requests[files[i].filename].onload();
         }
         Module['removeRunDependency']('datafile_game.data');
-
-      };
+      } catch (error) {
+        console.error('Error processing package data (possibly corrupted cache):', error);
+        // Clear cache and retry with fresh download
+        clearCacheAndRetry(handleError);
+      }
+    };
       Module['addRunDependency']('datafile_game.data');
 
       if (!Module.preloadResults) Module.preloadResults = {};
@@ -252,6 +282,7 @@ Module.expectedDataFileDownloads++;
       function preloadFallback(error) {
         console.error(error);
         console.error('falling back to default preload behavior');
+        if (Module['setStatus']) Module['setStatus']('Updating...');
         fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE, processPackageData, handleError);
       };
 
@@ -262,9 +293,15 @@ Module.expectedDataFileDownloads++;
               Module.preloadResults[PACKAGE_NAME] = {fromCache: useCached};
               if (useCached) {
                 console.info('loading ' + PACKAGE_NAME + ' from cache');
-                fetchCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME, processPackageData, preloadFallback);
+                fetchCachedPackage(db, PACKAGE_PATH + PACKAGE_NAME, 
+                  processPackageData, 
+                  function(error) {
+                    console.warn('Failed to load from cache, clearing and retrying:', error);
+                    clearCacheAndRetry(preloadFallback);
+                  });
               } else {
-                console.info('loading ' + PACKAGE_NAME + ' from remote');
+                console.info('loading ' + PACKAGE_NAME + ' from remote (cache outdated or missing)');
+                if (Module['setStatus']) Module['setStatus']('Updating...');
                 fetchRemotePackage(REMOTE_PACKAGE_NAME, REMOTE_PACKAGE_SIZE,
                   function(packageData) {
                     cacheRemotePackage(db, PACKAGE_PATH + PACKAGE_NAME, packageData, {uuid:PACKAGE_UUID}, processPackageData,
@@ -280,7 +317,7 @@ Module.expectedDataFileDownloads++;
         }
         , preloadFallback);
 
-      if (Module['setStatus']) Module['setStatus']('Downloading...');
+      if (Module['setStatus']) Module['setStatus']('Checking for updates...');
 
     }
     if (Module['calledRun']) {
@@ -291,6 +328,6 @@ Module.expectedDataFileDownloads++;
     }
 
   }
-  loadPackage({"package_uuid":"b0da8b6b-c6b6-444e-8f6b-c3fb8f7cf4a9","remote_package_size":187240370,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":187240370,"audio":false}]});
+  loadPackage({"package_uuid":"a7f3c2d1-9e4b-5a8c-2d6f-1b3e9c7a4f8d","remote_package_size":187240370,"files":[{"filename":"/game.love","crunched":0,"start":0,"end":187240370,"audio":false}]});
 
 })();
