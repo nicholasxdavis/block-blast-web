@@ -1,0 +1,15 @@
+{
+  "name": "block-blast-web",
+  "version": "1.0.0",
+  "description": "Block Blast game - Web version using love.js",
+  "scripts": {
+    "build": "node build.js",
+    "serve": "npx http-server web -p 8000 -c-1 --mime-types={\".wasm\":\"application/wasm\"}",
+    "install-lovejs": "npm install --save-dev love.js@latest"
+  },
+  "devDependencies": {
+    "love.js": "latest",
+    "archiver": "^6.0.1"
+  },
+  "dependencies": {}
+}
