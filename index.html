@@ -40,8 +40,10 @@
       content="Drop blocks, clear lines and chase high scores in Block Burst. No downloads. Just tap to play instantly in your browser."
     >
     <meta property="og:url" content="https://playblockblast.net/">
-    <!-- If you host a share image later, update this URL -->
-    <!-- <meta property="og:image" content="https://playblockblast.net/og-image.png"> -->
+    <meta property="og:image" content="share.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
@@ -50,7 +52,7 @@
       name="twitter:description"
       content="Play Block Burst online. Fast, satisfying block-busting puzzle gameplay right in your browser."
     >
-    <!-- <meta name="twitter:image" content="https://playblockblast.net/og-image.png"> -->
+    <meta name="twitter:image" content="https://playblockblast.net/share.png">
 
     <!-- Load custom style sheet -->
     <link rel="stylesheet" type="text/css" href="theme/love.css">
@@ -69,31 +71,63 @@
             else if(canvas.mozRequestFullScreen)
                 canvas.mozRequestFullScreen();
       }
+      // Detect mobile device
+      function isMobileDevice() {
+        return window.innerWidth < 800 || (window.innerHeight > window.innerWidth && window.innerHeight / window.innerWidth > 1.2) ||
+               /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+      
+      var isMobile = isMobileDevice();
+      var MOBILE_WIDTH = 540;
+      var MOBILE_HEIGHT = 960;
+      
       function FullScreenHook(){
         var canvas = document.getElementById("canvas");
         var loadingCanvas = document.getElementById("loadingCanvas");
-        var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-        var height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-        canvas.width = width;
-        canvas.height = height;
-        loadingCanvas.width = width;
-        loadingCanvas.height = height;
+        
+        if (isMobile) {
+          // Mobile: use fixed dimensions matching mobile version
+          canvas.width = MOBILE_WIDTH;
+          canvas.height = MOBILE_HEIGHT;
+          loadingCanvas.width = MOBILE_WIDTH;
+          loadingCanvas.height = MOBILE_HEIGHT;
+        } else {
+          // Desktop: use fullscreen
+          var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+          var height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+          canvas.width = width;
+          canvas.height = height;
+          loadingCanvas.width = width;
+          loadingCanvas.height = height;
+        }
       }
       
-      // Make fullscreen on resize
+      // Make fullscreen on resize (only for desktop)
       window.addEventListener('resize', function() {
+        // Re-detect mobile on resize (in case of orientation change)
+        isMobile = isMobileDevice();
         FullScreenHook();
         if (loadingContext) {
           var loadingCanvas = document.getElementById('loadingCanvas');
-          loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-          loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+          if (isMobile) {
+            loadingCanvas.width = MOBILE_WIDTH;
+            loadingCanvas.height = MOBILE_HEIGHT;
+          } else {
+            loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+          }
         }
       });
       var loadingContext = null;
       function initLoadingCanvas() {
         var loadingCanvas = document.getElementById('loadingCanvas');
-        loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-        loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        if (isMobile) {
+          loadingCanvas.width = MOBILE_WIDTH;
+          loadingCanvas.height = MOBILE_HEIGHT;
+        } else {
+          loadingCanvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+          loadingCanvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        }
         loadingContext = loadingCanvas.getContext('2d');
       }
       function drawLoadingText(text) {
